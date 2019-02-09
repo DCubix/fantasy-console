@@ -1,0 +1,16 @@
+.vs/
+.vscode/
+[Bb]uild/
+[Oo]ut/
+[Dd]ebug/
+[Rr]elease/
+[Dd]bg/
+[Rr]el/
+*.sdf
+*.user
+*.pro
+*.sln
+*.vcproj
+*.mdf
+*.exe
+*.dll
