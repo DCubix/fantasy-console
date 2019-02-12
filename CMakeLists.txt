@@ -18,3 +18,16 @@ target_link_libraries(
 	${PROJECT_NAME}
 	SDL2
 )
+
+if (CMAKE_DL_LIBS)
+	target_link_libraries(${PROJECT_NAME}
+		${CMAKE_DL_LIBS}
+	)
+endif()
+
+if (UNIX AND NOT APPLE)
+	target_link_libraries(${PROJECT_NAME}
+		m
+		pthread
+	)
+endif()

@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
 			 jmp _start
 
 		_end:
-			 push 1000
+			 push 5000
 			 wait
 			 halt
 

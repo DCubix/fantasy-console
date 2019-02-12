@@ -1,7 +1,7 @@
 #ifndef CONSOLE_H
 #define CONSOLE_H
 
-#if defined(__MINGW32__) || defined(__MINGW64__)
+#if !__has_include("SDL2.h")
 #include "SDL2/SDL.h"
 #else
 #include "SDL2.h"
