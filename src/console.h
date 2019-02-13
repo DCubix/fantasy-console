@@ -95,6 +95,7 @@ enum OpCode {
 	OpPutP,				// Draws a single pixel (pops 2 values from the stack. X and Y)
 	OpPutPM,			// Draws a single pixel (pops 2 values from the stack. X and Y, and the color value from a MEMORY ADDR)
 	OpPutS,				// Draws an 8x8 sprite (pops 2 values from the stack. X and Y)
+						// If there is one more value on the stack, that's your frame number!
 
 	OpSys,				// System call
 

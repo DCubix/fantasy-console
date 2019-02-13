@@ -2,6 +2,8 @@
 
 #include <thread>
 #include <mutex>
+#include <fstream>
+#include <iostream>
 
 constexpr uint8_t PALETTE[][3] = {
 	{  21,  25,  26 },
@@ -100,19 +102,20 @@ case name: { \
 				Byte y = unpack(m_stack.top()); m_stack.pop();
 				Byte x = unpack(m_stack.top()); m_stack.pop();
 				m_video.put(x, y, next());
-				m_waitTimer = RenderWaitTime;
 			} break;
 			case OpPutPM: {
 				Byte y = unpack(m_stack.top()); m_stack.pop();
 				Byte x = unpack(m_stack.top()); m_stack.pop();
 				m_video.put(x, y, data()[next()]);
-				m_waitTimer = RenderWaitTime;
 			} break;
 			case OpPutS: {
 				Byte y = unpack(m_stack.top()); m_stack.pop();
 				Byte x = unpack(m_stack.top()); m_stack.pop();
-				m_video.sprite(x, y, &data()[next()]);
-				m_waitTimer = RenderWaitTime;
+				Byte frame = 0;
+				if (!m_stack.empty()) {
+					frame = unpack(m_stack.top()); m_stack.pop();
+				}
+				m_video.sprite(x, y, &data()[next() + 64 * frame]);
 			} break;
 			case OpNoop: break;
 			case OpSys: {
@@ -161,6 +164,9 @@ void Console::flip() {
 	SDL_Rect dst = { 0, 0, ConsoleScreenWidth * PixelSize, ConsoleScreenHeight * PixelSize };
 	SDL_RenderCopy(m_renderer, m_buffer, nullptr, &dst);
 	SDL_RenderPresent(m_renderer);
+
+	m_video.markAsNotDirty();
+
 	m_lock.unlock();
 }
 
@@ -205,9 +211,11 @@ void Console::init() {
 
 	std::thread cpu([](Console* console){
 		while (!console->m_halted) {
-			console->tick();
-			// wait
-			for (int i = 0; i < 512; i++);
+			if (!console->m_video.dirty()) {
+				console->tick();
+				// wait
+				for (int i = 0; i < 512; i++);
+			}
 		}
 	}, this);
 
@@ -216,11 +224,25 @@ void Console::init() {
 		while (SDL_PollEvent(&evt)) {
 			switch (evt.type) {
 				case SDL_QUIT: m_halted = true; break;
+				case SDL_KEYDOWN: {
+					if (evt.key.keysym.sym == SDLK_F10) {
+						m_lock.lock();
+						std::ofstream fs("memory.dat", std::ios::binary | std::ios::ate);
+						if (fs.good()) {
+							fs.write(reinterpret_cast<char*>(m_ram.data().data()), sizeof(Byte) * m_ram.data().size());
+							fs.close();
+							std::cout << "Saved memory dump" << std::endl;
+						}
+						m_lock.unlock();
+					}
+				} break;
 				default: break;
 			}
 		}
 
-		flip();
+		if (m_video.dirty()) {
+			flip();
+		}
 	}
 
 	cpu.join();

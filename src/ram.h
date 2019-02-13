@@ -61,6 +61,8 @@ public:
 	Byte& operator [](uint16_t addr) { return m_data[addr]; }
 	const Byte& operator [](uint16_t addr) const { return m_data[addr]; }
 
+	std::array<Byte, SizeKB * 1024> data() const { return m_data; }
+
 private:
 	std::array<Byte, SizeKB * 1024> m_data;
 	std::vector<DataBlock> m_unused, m_inuse;

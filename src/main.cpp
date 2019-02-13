@@ -13,6 +13,7 @@ int main(int argc, char** argv) {
 			 let dirx, 0
 			 let y, 37
 			 let diry, 1
+			 let fra, 0
 			 let spr, [
 				0, 0, 7, 7, 7, 7, 0, 0,
 				0, 7, 7, 7, 7, 7, 7, 0,
@@ -21,7 +22,16 @@ int main(int argc, char** argv) {
 				7, 7, 7, 7, 7, 5, 5, 7,
 				7, 7, 7, 7, 5, 5, 5, 7,
 				0, 7, 5, 5, 5, 5, 7, 0,
-				0, 0, 7, 7, 7, 7, 0, 0
+				0, 0, 7, 7, 7, 7, 0, 0,
+
+				0, 0, 1, 1, 1, 1, 0, 0,
+				0, 1, 1, 1, 1, 1, 1, 0,
+				1, 1, 1, 1, 1, 1, 5, 1,
+				1, 1, 1, 1, 1, 1, 5, 1,
+				1, 1, 1, 1, 1, 5, 5, 1,
+				1, 1, 1, 1, 5, 5, 5, 1,
+				0, 1, 5, 5, 5, 5, 1, 0,
+				0, 0, 1, 1, 1, 1, 0, 0
 			 ]
 
 		_start:
@@ -35,8 +45,10 @@ int main(int argc, char** argv) {
 			 jge _swapy
 
 			 sys 0xF0
-			 pushm &x
-			 pushm &y
+
+			 pushm &fra		; Frame #
+			 pushm &x		; X
+			 pushm &y		; Y
 			 puts &spr
 
 			 jmp _start
@@ -70,6 +82,12 @@ int main(int argc, char** argv) {
 			 push 1
 			 xor
 			 pop &dirx
+
+			 pushm &fra
+			 push 1
+			 xor
+			 pop &fra
+
 			 jmp _start
 
 		_swapy:
@@ -77,6 +95,12 @@ int main(int argc, char** argv) {
 			 push 1
 			 xor
 			 pop &diry
+
+			 pushm &fra
+			 push 1
+			 xor
+			 pop &fra
+
 			 jmp _start
 
 	)", &con);

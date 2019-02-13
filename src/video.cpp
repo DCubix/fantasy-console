@@ -35,6 +35,7 @@ void Video::put(int x, int y, uint8_t color) {
 		y < m_viewport[1] || y >= m_viewport[3])
 		return;
 	m_vram[x + y * m_videoWidth] = color;
+	m_dirty = true;
 }
 
 void Video::sprite(int x, int y, Byte* data) {
