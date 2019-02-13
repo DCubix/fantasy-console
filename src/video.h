@@ -5,6 +5,9 @@
 
 #include <cstdint>
 #include <cassert>
+#include <queue>
+
+constexpr uint32_t SpriteSize = 8;
 
 class Video {
 public:
@@ -26,7 +29,6 @@ private:
 	uint16_t m_vramSize;
 
 	int m_videoWidth, m_videoHeight;
-
 	int m_viewport[4];
 };
 

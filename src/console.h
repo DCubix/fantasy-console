@@ -12,6 +12,7 @@
 
 #include <stack>
 #include <vector>
+#include <mutex>
 
 /**
  * Memory Layout
@@ -47,6 +48,7 @@ constexpr uint16_t ProgramSize = 12288;
 constexpr uint16_t VideoSize = 9216;
 constexpr uint16_t DataSize = 2560;
 constexpr uint16_t OptsSize = 512;
+constexpr uint16_t RenderWaitTime = 16384;
 
 #define LEN(x) (sizeof(x) / sizeof(x[0]))
 
@@ -60,25 +62,17 @@ enum OpCode {
 
 	/* MATH */
 	OpAdd,				// Pops 2 values from the stack, adds them and pushes the result to it
-	OpAddM,				// Pops 2 values from the stack, adds them and set it to a MEMORY ADDR
 	OpSub,				// Pops 2 values from the stack, subtracts them and pushes the result to it
-	OpSubM,				// Pops 2 values from the stack, subtracts them and set it to a MEMORY ADDR
 	OpMul,				// Pops 2 values from the stack, multiplies them and pushes the result to it
-	OpMulM,				// Pops 2 values from the stack, multiplies them and set it to a MEMORY ADDR
 	OpDiv,				// Pops 2 values from the stack, divides them and pushes the result to it
-	OpDivM,				// Pops 2 values from the stack, divides them and set it to a MEMORY ADDR
 	OpLsh,				// Pops a value from the stack, shifts it to the left and pushes the result to it
-	OpLshM,				// Pops a value from the stack, shifts it to the left and set it to a MEMORY ADDR
 	OpRsh,				// Pops a value from the stack, shifts it to the right and pushes the result to it
-	OpRshM,				// Pops a value from the stack, shifts it to the right and set it to a MEMORY ADDR
 	OpAnd,				// Pops 2 values from the stack, bitwise ANDs them and pushes the result to it
-	OpAndM,				// Pops 2 values from the stack, bitwise ANDs them and set it to a MEMORY ADDR
 	OpOr,				// Pops 2 values from the stack, bitwise ORs them and pushes the result to it
-	OpOrM,				// Pops 2 values from the stack, bitwise ORs them and set it to a MEMORY ADDR
 	OpXor,				// Pops 2 values from the stack, bitwise XORs them and pushes the result to it
-	OpXorM,				// Pops 2 values from the stack, bitwise XORs them and set it to a MEMORY ADDR
 	OpNot,				// Pops a value from the stack, bitwise NOTs them and pushes the result to it
-	OpNotM,				// Pops a value from the stack, bitwise NOTs them and set it to a MEMORY ADDR
+	OpInc,				// Increments a memory location by 1
+	OpDec,				// Decrements a memory location by 1
 
 	/*  COMPARISON */
 	OpCmp,				// Compares a value in MEMORY to a LITERAL
@@ -125,6 +119,8 @@ public:
 	Byte* data() { return &m_ram[0x5400u]; }
 	Byte* opts() { return &m_ram[0x5E00u]; }
 
+	RAM<24>& ram() { return m_ram; }
+
 	void tick();
 
 private:
@@ -159,6 +155,8 @@ private:
 
 	std::stack<Value> m_stack;
 	std::stack<Byte> m_callStack;
+
+	std::mutex m_lock;
 
 	bool m_halted;
 };

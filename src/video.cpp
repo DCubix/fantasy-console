@@ -38,5 +38,10 @@ void Video::put(int x, int y, uint8_t color) {
 }
 
 void Video::sprite(int x, int y, Byte* data) {
-
+	for (uint32_t sy = 0; sy < SpriteSize; sy++) {
+		for (uint32_t sx = 0; sx < SpriteSize; sx++) {
+			uint32_t si = sx + sy * SpriteSize;
+			put(x+sx, y+sy, data[si]);
+		}
+	}
 }

@@ -25,17 +25,12 @@ case name: { \
 	Byte a = unpack(m_stack.top()); m_stack.pop(); \
 	Byte b = unpack(m_stack.top()); m_stack.pop(); \
 	m_stack.push(Value(a op b, Value::Literal)); \
-} break; \
-case name##M: { \
-	Byte a = unpack(m_stack.top()); m_stack.pop(); \
-	Byte b = unpack(m_stack.top()); m_stack.pop(); \
-	data()[next()] = a op b; \
 } break;
 
 	if (m_waitTimer > 0) {
 		m_waitTimer--;
 	} else {
-		Byte op = next();
+		OpCode op = OpCode(next());
 		switch (op) {
 			case OpHalt: m_halted = true; break;
 			case OpPush: m_stack.push(Value(next(), Value::Literal)); break;
@@ -58,42 +53,24 @@ case name##M: { \
 			mop(OpOr, |)
 			mop(OpXor, ^)
 
+			case OpInc: data()[next()]++; break;
+			case OpDec: data()[next()]--; break;
+
 			case OpRsh: {
-				Value a = m_stack.top(); m_stack.pop();
-				Byte n = next();
-				Byte r = a.val >> n;
-				m_stack.push(Value(r, a.type));
-			} break;
-			case OpRshM: {
-				Value a = m_stack.top(); m_stack.pop();
-				Byte n = next();
-				Byte loc = next();
-				Byte r = a.val >> n;
-				data()[loc] = r;
+				Byte a = unpack(m_stack.top()); m_stack.pop();
+				Byte n = unpack(m_stack.top()); m_stack.pop();
+				m_stack.push(Value(a >> n, Value::Literal));
 			} break;
 
 			case OpLsh: {
-				Value a = m_stack.top(); m_stack.pop();
-				Byte n = next();
-				Byte r = a.val << n;
-				m_stack.push(Value(r, a.type));
+				Byte a = unpack(m_stack.top()); m_stack.pop();
+				Byte n = unpack(m_stack.top()); m_stack.pop();
+				m_stack.push(Value(a << n, Value::Literal));
 			} break;
-			case OpLshM: {
-				Value a = m_stack.top(); m_stack.pop();
-				Byte n = next();
-				Byte loc = next();
-				Byte r = a.val << n;
-				data()[loc] = r;
-			} break;
-
+			
 			case OpNot: {
-				Value a = m_stack.top(); m_stack.pop();
-				m_stack.push(Value(~a.val, a.type));
-			} break;
-			case OpNotM: {
-				Value a = m_stack.top(); m_stack.pop();
-				Byte loc = next();
-				data()[loc] = ~a.val;
+				Byte a = unpack(m_stack.top()); m_stack.pop();
+				m_stack.push(Value(~a, Value::Literal));
 			} break;
 
 			case OpCmp: {
@@ -118,18 +95,25 @@ case name##M: { \
 			case OpJge: { Byte pos = next(); if (m_cmpResult == CmpGreater || m_cmpResult == CmpEquals) m_pc = pos; } break;
 			case OpJle: { Byte pos = next(); if (m_cmpResult == CmpLess || m_cmpResult == CmpEquals) m_pc = pos; } break;
 			case OpCall: m_callStack.push(m_pc); m_pc = next(); break;
-			case OpRet: m_pc = m_callStack.top(); m_callStack.pop(); break;
+			case OpRet: m_pc = m_callStack.top(); m_callStack.pop(); next(); break;
 			case OpPutP: {
 				Byte y = unpack(m_stack.top()); m_stack.pop();
 				Byte x = unpack(m_stack.top()); m_stack.pop();
 				m_video.put(x, y, next());
+				m_waitTimer = RenderWaitTime;
 			} break;
 			case OpPutPM: {
 				Byte y = unpack(m_stack.top()); m_stack.pop();
 				Byte x = unpack(m_stack.top()); m_stack.pop();
 				m_video.put(x, y, data()[next()]);
+				m_waitTimer = RenderWaitTime;
 			} break;
-			case OpPutS: break;
+			case OpPutS: {
+				Byte y = unpack(m_stack.top()); m_stack.pop();
+				Byte x = unpack(m_stack.top()); m_stack.pop();
+				m_video.sprite(x, y, &data()[next()]);
+				m_waitTimer = RenderWaitTime;
+			} break;
 			case OpNoop: break;
 			case OpSys: {
 				Byte sc = SystemCall(next());
@@ -139,7 +123,7 @@ case name##M: { \
 						if (!m_stack.empty()) {
 							color = unpack(m_stack.top()); m_stack.pop();
 						}
-						m_video.clear(uint8_t(color));
+						m_video.clear(color);
 					} break;
 				}
 			} break;
@@ -149,6 +133,7 @@ case name##M: { \
 }
 
 void Console::flip() {
+	m_lock.lock();
 	Uint8 *pixels;
 	int pitch;
 	int w, h;
@@ -176,6 +161,7 @@ void Console::flip() {
 	SDL_Rect dst = { 0, 0, ConsoleScreenWidth * PixelSize, ConsoleScreenHeight * PixelSize };
 	SDL_RenderCopy(m_renderer, m_buffer, nullptr, &dst);
 	SDL_RenderPresent(m_renderer);
+	m_lock.unlock();
 }
 
 void Console::init() {

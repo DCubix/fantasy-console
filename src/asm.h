@@ -11,6 +11,7 @@
 enum TokenType {
 	TokEnd = 0,
 	TokIdentifier,
+	TokOpCode,
 	TokNumber,
 	TokReference,
 	TokNewLabel,
@@ -68,6 +69,43 @@ private:
 };
 
 using ByteList = std::vector<Byte>;
+
+static std::map<std::string, OpCode> OP_CODES = {
+	{ "halt", OpHalt },
+	{ "push", OpPush },
+	{ "pushm", OpPushM },
+	{ "pop", OpPop },
+	{ "wait", OpWait },
+	{ "add", OpAdd },
+	{ "sub", OpSub },
+	{ "mul", OpMul },
+	{ "div", OpDiv },
+	{ "lsh", OpLsh },
+	{ "rsh", OpRsh },
+	{ "and", OpAnd },
+	{ "or", OpOr },
+	{ "xor", OpXor },
+	{ "not", OpNot },
+	{ "inc", OpInc },
+	{ "dec", OpDec },
+	{ "cmp", OpCmp },
+	{ "cmpm", OpCmpM },
+	{ "jmp", OpJmp },
+	{ "jeq", OpJeq },
+	{ "jne", OpJne },
+	{ "jgt", OpJgt },
+	{ "jlt", OpJlt },
+	{ "jge", OpJge },
+	{ "jle", OpJle },
+	{ "call", OpCall },
+	{ "ret", OpRet },
+	{ "putp", OpPutP },
+	{ "putpm", OpPutPM },
+	{ "puts", OpPutS },
+	{ "sys", OpSys },
+	{ "noop", OpNoop }
+};
+
 class ASM {
 public:
 	ASM() = default;

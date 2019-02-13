@@ -9,53 +9,75 @@ int main(int argc, char** argv) {
 	Console con{};
 
 	ASM comp(R"(
-			 let x
-			 let y
-			 let col, 7
+			 let x, 11
+			 let dirx, 0
+			 let y, 37
+			 let diry, 1
+			 let spr, [
+				0, 0, 7, 7, 7, 7, 0, 0,
+				0, 7, 7, 7, 7, 7, 7, 0,
+				7, 7, 7, 7, 7, 7, 5, 7,
+				7, 7, 7, 7, 7, 7, 5, 7,
+				7, 7, 7, 7, 7, 5, 5, 7,
+				7, 7, 7, 7, 5, 5, 5, 7,
+				0, 7, 5, 5, 5, 5, 7, 0,
+				0, 0, 7, 7, 7, 7, 0, 0
+			 ]
 
-			 sys 0xF0	;; Clear screen
 		_start:
-			 pushm @x
-			 pushm @y
-			 putpm @col
+			 call _incx
 
-			 pushm @x
-			 push 1
-			 addm @x
+			 cmp &x, 88
+			 jge _swapx
 
-			 cmp @x, 96
-			 jge next_row
+			 call _incy
+			 cmp &y, 88
+			 jge _swapy
 
-			 pushm @col
-			 push 1
-			 addm @col
-
-			 cmp @col, 7
-			 jgt reset_col
+			 sys 0xF0
+			 pushm &x
+			 pushm &y
+			 puts &spr
 
 			 jmp _start
 
-		reset_col:
-			 push 0
-			 pop @col
-			 jmp _start
+		_decx:
+			 cmp &dirx, 0
+			 jne _incx
+			 dec &x
+			 ret
 
-		next_row:
-			 push 0
-			 pop @x
-			 pushm @y
+		_incx:
+			 cmp &dirx, 1
+			 jne _decx
+			 inc &x
+			 ret
+
+		_decy:
+			 cmp &diry, 0
+			 jne _incy
+			 dec &y
+			 ret
+
+		_incy:
+			 cmp &diry, 1
+			 jne _decy
+			 inc &y
+			 ret
+
+		_swapx:
+			 pushm &dirx
 			 push 1
-			 addm @y
-
-			 cmp @y, 96
-			 jge _end
-
+			 xor
+			 pop &dirx
 			 jmp _start
 
-		_end:
-			 push 5000
-			 wait
-			 halt
+		_swapy:
+			 pushm &diry
+			 push 1
+			 xor
+			 pop &diry
+			 jmp _start
 
 	)", &con);
 	ByteList code = comp.compile();

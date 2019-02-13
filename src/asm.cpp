@@ -6,56 +6,10 @@
 
 #define error(x) std::cerr << x << std::endl
 
-static std::map<std::string, OpCode> OP_CODES = {
-	{ "halt", OpHalt },
-	{ "push", OpPush },
-	{ "pushm", OpPushM },
-	{ "pop", OpPop },
-	{ "wait", OpWait },
-	{ "add", OpAdd },
-	{ "addm", OpAddM },
-	{ "sub", OpSub },
-	{ "subm", OpSubM },
-	{ "mul", OpMul },
-	{ "mulm", OpMulM },
-	{ "div", OpDiv },
-	{ "divm", OpDivM },
-	{ "lsh", OpLsh },
-	{ "lshm", OpLshM },
-	{ "rsh", OpRsh },
-	{ "rshm", OpRshM },
-	{ "and", OpAnd },
-	{ "andm", OpAndM },
-	{ "or", OpOr },
-	{ "orm", OpOrM },
-	{ "xor", OpXor },
-	{ "xorm", OpXorM },
-	{ "not", OpNot },
-	{ "notm", OpNotM },
-	{ "cmp", OpCmp },
-	{ "cmpm", OpCmpM },
-	{ "rsh", OpRsh },
-	{ "rshm", OpRshM },
-	{ "jmp", OpJmp },
-	{ "jeq", OpJeq },
-	{ "jne", OpJne },
-	{ "jgt", OpJgt },
-	{ "jlt", OpJlt },
-	{ "jge", OpJge },
-	{ "jle", OpJle },
-	{ "call", OpCall },
-	{ "ret", OpRet },
-	{ "putp", OpPutP },
-	{ "putpm", OpPutPM },
-	{ "puts", OpPutS },
-	{ "sys", OpSys },
-	{ "noop", OpNoop }
-};
-
 Scanner::Scanner(const std::string& input)
 	: m_input(input), m_pos(0)
 {
-	std::cout << "INPUT:\n" << input << std::endl;
+//	std::cout << "INPUT:\n" << input << std::endl;
 }
 
 char Scanner::next() {
@@ -95,9 +49,9 @@ void ASM::tokenize() {
 #define S std::string(1, C)
 
 	while (m_scanner.hasNext()) {
-		if (std::isalpha(C) || C == '_' || C == '@') { // TokIdentifier/TokRef/TokNewLabel
+		if (std::isalpha(C) || C == '_' || C == '&') { // TokIdentifier/TokRef/TokNewLabel
 			std::string res = "";
-			while ((std::isalnum(C) || C == '_' || C == '@' || C == ':') && m_scanner.hasNext()) {
+			while ((std::isalnum(C) || C == '_' || C == '&' || C == ':') && m_scanner.hasNext()) {
 				res += C;
 				m_scanner.next();
 			}
@@ -106,7 +60,8 @@ void ASM::tokenize() {
 			std::transform(rlow.begin(), rlow.end(), rlow.begin(), ::tolower);
 
 			TokenType type = TokenType::TokIdentifier;
-			if (res[0] == '@') {
+			Byte value = 0;
+			if (res[0] == '&') {
 				type = TokenType::TokReference;
 				res.erase(0, 1);
 			} else if (res[res.size() - 1] == ':') {
@@ -114,8 +69,11 @@ void ASM::tokenize() {
 				res.erase(res.size() - 1, 1);
 			} else if (rlow == "let") {
 				type = TokenType::TokLet;
+			} else if (OP_CODES.find(rlow) != OP_CODES.end()) {
+				type = TokenType::TokOpCode;
+				value = OP_CODES[rlow];
 			}
-			m_tokens.push_back(Token(type, res, 0));
+			m_tokens.push_back(Token(type, res, value));
 		} else if (std::isdigit(C)) {
 			std::string res = "";
 			int base = 10;
@@ -148,7 +106,7 @@ void ASM::tokenize() {
 		}
 	}
 
-	printTokens();
+//	printTokens();
 }
 
 ByteList ASM::compile() {
@@ -207,6 +165,8 @@ bool ASM::expect(TokenType type, const std::string& param, bool regex, bool forc
 		current().lexeme <<
 		"\". Expected \"" <<
 		expc <<
+		"\" Near \"" <<
+		last().lexeme <<
 		"\"."
 	);
 	return false;
@@ -258,8 +218,12 @@ void ASM::readLabelsAndRefs() {
 								params.push_back(curr.value);
 								remove.push_back(i);
 								i++;
-								if (m_tokens[i].type != TokenType::TokComma) {
+								if (m_tokens[i].type == TokenType::TokCloseBracket) {
+									i--;
+								} else if (m_tokens[i].type != TokenType::TokComma) {
 									error("ERROR: Expected a Comma after a number in the Data Block.");
+									error("At \"" << m_tokens[i-1].lexeme << "\"");
+									error("Before \"" << m_tokens.back().lexeme << "\"");
 									break;
 								} else {
 									remove.push_back(i);
@@ -292,6 +256,7 @@ void ASM::readLabelsAndRefs() {
 	for (auto&& tok : m_tokens) {
 		if (tok.type == TokIdentifier ||
 			tok.type == TokNumber ||
+			tok.type == TokOpCode ||
 			tok.type == TokReference ||
 			tok.type == TokIdentifier)
 			pos++;
@@ -326,17 +291,9 @@ ByteList ASM::atom() {
 
 ByteList ASM::instruction() {
 	ByteList ret;
-	if (expect(TokenType::TokIdentifier)) {
+	if (expect(TokenType::TokOpCode)) {
 		Token tok = last();
-		std::transform(tok.lexeme.begin(), tok.lexeme.end(), tok.lexeme.begin(), ::tolower);
-		auto op = OP_CODES.find(tok.lexeme);
-		if (op != OP_CODES.end()) {
-			ret.push_back(op->second);
-		} else {
-			error("ERROR: Unknown instruction: \"" << tok.lexeme << "\"");
-			return ret;
-		}
-
+		ret.push_back(tok.value);
 		ByteList a = atom();
 		if (!a.empty()) ret.insert(ret.end(), a.begin(), a.end());
 		while (accept(TokenType::TokComma)) {
